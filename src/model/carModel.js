@@ -3,10 +3,11 @@ const mongoose = require("mongoose");
 const carsSchema = new mongoose.Schema(
   {
     title: String,
-
     year: Number,
     price: String,
     class: String,
+    location: String,
+    isActive: Boolean,
     image: {
       type: String,
       default: "",

@@ -28,6 +28,10 @@ app.use("/user", userRouter);
 app.use("/car", carRouter);
 app.use("/comment", commentRouter);
 
+app.use("/", (req, res) => {
+  res.send("ok");
+});
+
 const MONGO_URL = process.env.MONGO_URL;
 
 mongoose

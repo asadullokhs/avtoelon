@@ -26,11 +26,13 @@ app.use("/user", userRouter);
 app.use("/car", carRouter);
 app.use("/comment", commentRouter);
 
+const MONGO_URL = process.env.MONGO_URL;
+
 mongoose
-  .connect("mongodb://localhost:27017/ElonApp")
+  .connect(MONGO_URL)
   .then(() => {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server responded at ${PORT} PORT...`);
     });
   })
-  .catch((err) => console.log(err));
+  .catch((error) => console.log(error));

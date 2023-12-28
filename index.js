@@ -31,7 +31,7 @@ const MONGO_URL = process.env.MONGO_URL;
 mongoose
   .connect(MONGO_URL)
   .then(() => {
-    server.listen(PORT, () => {
+    app.listen(PORT, () => {
       console.log(`Server responded at ${PORT} PORT...`);
     });
   })

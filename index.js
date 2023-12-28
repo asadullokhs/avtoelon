@@ -2,6 +2,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const fileupload = require("express-fileupload");
 const dotenv = require("dotenv");
+const cors = require("cors");
 dotenv.config();
 
 const path = require("path");
@@ -20,6 +21,7 @@ app.use(express.static(path.join(__dirname, "src", "files")));
 app.use(fileupload());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
 
 // router
 app.use("/user", userRouter);

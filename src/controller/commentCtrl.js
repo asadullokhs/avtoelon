@@ -1,5 +1,6 @@
 const Comment = require("../model/commentsModel");
 const mongoose = require("mongoose");
+const JWT = require("jsonwebtoken");
 
 const commentCtrl = {
   addComment: async (req, res) => {
@@ -59,7 +60,7 @@ const commentCtrl = {
       if (!comment) {
         return res.status(404).send({ message: "Not found" });
       }
-      if (comment.authorId == currentUser.id || currentUser.role == "admin") {
+      if (comment.authorId == currentUser._id || currentUser.role == "admin") {
         const deletedComment = await Comment.findByIdAndDelete(id);
 
         return res
@@ -85,7 +86,7 @@ const commentCtrl = {
       const currentUser = await JWT.decode(token);
       const comment = await Comment.findById(id);
 
-      if (comment.authorId == currentUser.id || currentUser.role == "admin") {
+      if (comment.authorId == currentUser._id || currentUser.role == "admin") {
         const comments = await Comment.findByIdAndUpdate(id, req.body, {
           new: true,
         });

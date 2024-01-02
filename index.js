@@ -10,6 +10,7 @@ const path = require("path");
 const carRouter = require("./src/router/carRouter");
 const commentRouter = require("./src/router/commentRouter");
 const userRouter = require("./src/router/userRouter");
+const categoryRouter = require("./src/router/categoryRouter");
 
 const app = express();
 const PORT = process.env.PORT || 4002;
@@ -27,6 +28,7 @@ app.use(cors());
 app.use("/user", userRouter);
 app.use("/car", carRouter);
 app.use("/comment", commentRouter);
+app.use("/category", categoryRouter);
 
 const MONGO_URL = process.env.MONGO_URL;
 

@@ -1,4 +1,6 @@
 const Category = require("../model/categoryModel");
+const Car = require("../model/carModel");
+const Comment = require("../model/commentsModel");
 const { v4 } = require("uuid");
 const path = require("path");
 const fs = require("fs");
@@ -61,19 +63,36 @@ const categoryCtrl = {
   },
 
   delete: async (req, res) => {
+    const { token } = req.headers;
+    const { id } = req.params;
     try {
-      const { id } = req.params;
+      if (!token) {
+        return res.status(403).json({ message: "Token is required" });
+      }
       const category = await Category.findByIdAndDelete(id);
 
       if (!category) {
         return res.status(404).send({ message: "Category not found" });
       }
 
+      const cars = await Car.find({ category: id });
+
+      cars.forEach(async (car) => {
+        await fs.unlink(path.join(uploadsDir, car.image), (err) => {
+          if (err) {
+            return res.status(503).send({ message: err.message });
+          }
+        });
+        await Comment.deleteMany({ carId: car._id });
+      });
+
       await fs.unlink(path.join(uploadsDir, category.image), (err) => {
         if (err) {
           return res.status(503).send({ message: err.message });
         }
       });
+
+      await Car.deleteMany({ category: id });
 
       res
         .status(200)

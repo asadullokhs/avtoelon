@@ -58,6 +58,17 @@ const carCtrl = {
             as: "comments",
           },
         },
+        {
+          $lookup: {
+            from: "users",
+            let: { author: "$author" },
+            pipeline: [{ $match: { $expr: { $eq: ["$_id", "$$author"] } } }],
+            as: "author",
+          },
+        },
+        {
+          $unwind: "$author",
+        },
       ]);
 
       res.status(200).json({ message: "All cars", cars });
@@ -78,26 +89,20 @@ const carCtrl = {
           $lookup: {
             from: "comments",
             let: { carId: "$_id" },
-            pipeline: [
-              { $match: { $expr: { $eq: ["$carId", "$$carId"] } } },
-              {
-                $lookup: {
-                  from: "users",
-                  let: { authorId: "$authorId" },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ["$_id", "$$authorId"] } } },
-                  ],
-                  as: "author",
-                },
-              },
-              {
-                $addFields: {
-                  author: { $arrayElemAt: ["$author", 0] },
-                },
-              },
-            ],
+            pipeline: [{ $match: { $expr: { $eq: ["$carId", "$$carId"] } } }],
             as: "comments",
           },
+        },
+        {
+          $lookup: {
+            from: "users",
+            let: { author: "$author" },
+            pipeline: [{ $match: { $expr: { $eq: ["$_id", "$$author"] } } }],
+            as: "author",
+          },
+        },
+        {
+          $unwind: "$author",
         },
       ]);
 

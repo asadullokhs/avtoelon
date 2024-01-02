@@ -8,10 +8,13 @@ const uploadsDir = path.join(__dirname, "../", "files");
 
 const categoryCtrl = {
   add: async (req, res) => {
+    const { title } = req.body;
+    const { image } = req.files;
+    const { token } = req.headers;
     try {
-      const { title } = req.body;
-      const { image } = req.files;
-
+      if (!token) {
+        return res.status(403).json({ message: "Token is required" });
+      }
       const format = image.mimetype.split("/")[1];
 
       if (!format !== "png" && format !== "jpeg") {

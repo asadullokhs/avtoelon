@@ -43,6 +43,7 @@ const categoryCtrl = {
     },
 
     
+    
     get: async (req, res) => {
         try {
             const category = await Category.find()
@@ -125,7 +126,7 @@ const categoryCtrl = {
 
     getOne: async (req, res) => {
         try {
-            
+
             const {carId} = req.params
             let category = await Category.findById(carId);
             if(!category) {

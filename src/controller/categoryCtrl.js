@@ -1,5 +1,4 @@
 const Category = require("../model/categoryModel");
-const Car = require("../model/carModel");
 const { v4 } = require("uuid");
 const path = require("path");
 const fs = require("fs");

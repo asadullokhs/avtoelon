@@ -3,6 +3,7 @@ const Car = require("../model/carModel");
 const Comment = require("../model/commentsModel");
 const { v4 } = require("uuid");
 const path = require("path");
+const JWT = require("jsonwebtoken");
 const fs = require("fs");
 const mongoose = require("mongoose");
 
@@ -69,34 +70,41 @@ const categoryCtrl = {
       if (!token) {
         return res.status(403).json({ message: "Token is required" });
       }
-      const category = await Category.findByIdAndDelete(id);
 
-      if (!category) {
-        return res.status(404).send({ message: "Category not found" });
-      }
+      const currentUser = JWT.decode(token);
 
-      const cars = await Car.find({ category: id });
+      if (currentUser.role === "admin") {
+        const category = await Category.findByIdAndDelete(id);
 
-      cars.forEach(async (car) => {
-        await fs.unlink(path.join(uploadsDir, car.image), (err) => {
+        if (!category) {
+          return res.status(404).send({ message: "Category not found" });
+        }
+
+        const cars = await Car.find({ category: id });
+
+        cars.forEach(async (car) => {
+          await fs.unlink(path.join(uploadsDir, car.image), (err) => {
+            if (err) {
+              return res.status(503).send({ message: err.message });
+            }
+          });
+          await Comment.deleteMany({ carId: car._id });
+        });
+
+        await fs.unlink(path.join(uploadsDir, category.image), (err) => {
           if (err) {
             return res.status(503).send({ message: err.message });
           }
         });
-        await Comment.deleteMany({ carId: car._id });
-      });
 
-      await fs.unlink(path.join(uploadsDir, category.image), (err) => {
-        if (err) {
-          return res.status(503).send({ message: err.message });
-        }
-      });
+        await Car.deleteMany({ category: id });
 
-      await Car.deleteMany({ category: id });
-
-      res
-        .status(200)
-        .send({ message: "Category delete successfully", category });
+        res
+          .status(200)
+          .send({ message: "Category delete successfully", category });
+      } else {
+        res.status(405).json({ message: "Not allowed" });
+      }
     } catch (error) {
       res.status(503).send({ message: error.message });
     }
@@ -107,41 +115,53 @@ const categoryCtrl = {
       const { id } = req.params;
       const { title } = req.body;
       const { image } = req.files;
+      const { token } = req.headers;
 
-      const Products = await Category.findById(id);
+      if (!token) {
+        return res.status(403).json({ message: "Token is required" });
+      }
 
-      if (Products && image) {
-        await fs.unlink(path.join(uploadsDir, Products.image), (err) => {
-          if (err) {
+      const currentUser = JWT.decode(token);
+
+      if (currentUser.role === "admin") {
+        const category = await Category.findById(id);
+
+        if (category && image) {
+          await fs.unlink(path.join(uploadsDir, category.image), (err) => {
+            if (err) {
+              return res.status(503).send({ message: err.message });
+            }
+          });
+        }
+
+        const format = image.mimetype.split("/")[1];
+
+        if (format !== "png" && format !== "jpeg") {
+          return res.status(403).send({ message: "file format incorrect" });
+        }
+
+        const nameImg = `${v4()}.${format}`;
+
+        image.mv(path.join(uploadsDir, nameImg), (error) => {
+          if (error) {
             return res.status(503).send({ message: err.message });
           }
+          category.image = nameImg;
         });
+
+        category.title = title ? title : category.title;
+
+        const updatedCategory = await Category.findByIdAndUpdate(id, category, {
+          new: true,
+        });
+
+        res.status(200).send({
+          message: "Category update successfully",
+          category: updatedCategory,
+        });
+      } else {
+        res.status(405).json({ message: "Not allowed" });
       }
-
-      const format = image.mimetype.split("/")[1];
-
-      if (format !== "png" && format !== "jpeg") {
-        return res.status(403).send({ message: "file format incorrect" });
-      }
-
-      const nameImg = `${v4()}.${format}`;
-
-      image.mv(path.join(uploadsDir, nameImg), (error) => {
-        if (error) {
-          return res.status(503).send({ message: err.message });
-        }
-        Products.image = nameImg;
-      });
-
-      Products.title = title ? title : Products.title;
-      const updateProducts = await Category.findByIdAndUpdate(id, Products, {
-        new: true,
-      });
-
-      res.status(200).send({
-        message: "Category update successfully",
-        category: updateProducts,
-      });
     } catch (error) {
       res.status(503).send({ message: error.message });
     }

@@ -1,148 +1,157 @@
-const Category = require("../model/categoryModel")
-const Car = require("../model/carModel")
-const JWT = require("jsonwebtoken")
-const {v4} = require("uuid")
-const path = require("path")
-const fs = require("fs")
-
-const SECRET_KEY = "maxsus_kiy";
+const Category = require("../model/categoryModel");
+const Car = require("../model/carModel");
+const { v4 } = require("uuid");
+const path = require("path");
+const fs = require("fs");
+const mongoose = require("mongoose");
 
 const uploadsDir = path.join(__dirname, "../", "files");
 
-
 const categoryCtrl = {
-    add: async (req, res) => {
-        try {
-            const {title} = req.body
-            const {image} = req.files
+  add: async (req, res) => {
+    try {
+      const { title } = req.body;
+      const { image } = req.files;
 
-            const format = image.mimetype.split("/")[1]
+      const format = image.mimetype.split("/")[1];
 
-            if(!format !== "png" && format !== "jpeg") {
-                return res.status(403).send("File format inccorect")
-            }
+      if (!format !== "png" && format !== "jpeg") {
+        return res.status(403).send("File format inccorect");
+      }
 
-            const nameImg = `${v4()}.${format}`
+      const nameImg = `${v4()}.${format}`;
 
-            image.mv(path.join(uploadsDir, nameImg), (err) => {
-                if(err) {
-                    return res.status(503).send({message: err.message})
-                }
-            })
-
-            const category = await Category.create({title, image: nameImg})
-
-
-
-
-            res.status(201).send({message: "Category added successfully", category})
-
-        } catch (error) {
-            res.status(503).send({message: error.message})
+      image.mv(path.join(uploadsDir, nameImg), (err) => {
+        if (err) {
+          return res.status(503).send({ message: err.message });
         }
-    },
+      });
 
-    
-    
-    get: async (req, res) => {
-        try {
-            const category = await Category.find()
+      const category = await Category.create({ title, image: nameImg });
 
+      res
+        .status(201)
+        .send({ message: "Category added successfully", category });
+    } catch (error) {
+      res.status(503).send({ message: error.message });
+    }
+  },
 
+  get: async (req, res) => {
+    try {
+      const category = await Category.aggregate([
+        {
+          $lookup: {
+            from: "cars",
+            let: { category: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$category", "$$category"] } } },
+            ],
+            as: "cars",
+          },
+        },
+      ]);
 
+      res.status(200).send({ message: "Categoryies list", category });
+    } catch (error) {
+      res.status(503).send({ message: error.message });
+    }
+  },
 
-            res.status(200).send({message: "Categoryies list", category})
+  delete: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const category = await Category.findByIdAndDelete(id);
 
-        } catch (error) {
-            res.status(503).send({message: error.message})
+      if (!category) {
+        return res.status(404).send({ message: "Category not found" });
+      }
+
+      await fs.unlink(path.join(uploadsDir, category.image), (err) => {
+        if (err) {
+          return res.status(503).send({ message: err.message });
         }
-    },
+      });
 
-    delete: async (req, res) => {
-        try {
-            const {id} = req.params
-            const category = await Category.findByIdAndDelete(id)
-                
-            if(!category) {
-                return res.status(404).send({message: "Category not found"})
-            }
+      res
+        .status(200)
+        .send({ message: "Category delete successfully", category });
+    } catch (error) {
+      res.status(503).send({ message: error.message });
+    }
+  },
 
-            await fs.unlink(path.join(uploadsDir, category.image), (err) => {
-                if(err) {
-                    return res.status(503).send({message: err.message})
-                }
-            })
+  update: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { title } = req.body;
+      const { image } = req.files;
 
-            
-            res.status(200).send({message: "Category delete successfully", category})
+      const Products = await Category.findById(id);
 
-        } catch (error) {
-            res.status(503).send({message: error.message})
+      if (Products && image) {
+        await fs.unlink(path.join(uploadsDir, Products.image), (err) => {
+          if (err) {
+            return res.status(503).send({ message: err.message });
+          }
+        });
+      }
+
+      const format = image.mimetype.split("/")[1];
+
+      if (format !== "png" && format !== "jpeg") {
+        return res.status(403).send({ message: "file format incorrect" });
+      }
+
+      const nameImg = `${v4()}.${format}`;
+
+      image.mv(path.join(uploadsDir, nameImg), (error) => {
+        if (error) {
+          return res.status(503).send({ message: err.message });
         }
-    },
+        Products.image = nameImg;
+      });
 
-    update: async (req, res) => {
-        try {
-            const {id} = req.params;
-            const {title} = req.body;
-            const {image} = req.files;
+      Products.title = title ? title : Products.title;
+      const updateProducts = await Category.findByIdAndUpdate(id, Products, {
+        new: true,
+      });
 
-            const Products = await Category.findById(id);
+      res.status(200).send({
+        message: "Category update successfully",
+        category: updateProducts,
+      });
+    } catch (error) {
+      res.status(503).send({ message: error.message });
+    }
+  },
 
-            if(Products && image){
-                await fs.unlink(path.join(uploadsDir, Products.image), (err) => {
-                    if(err){
-                        return res.status(503).send({message: err.message})
-                    }
-                })
-            }
+  getCategoryById: async (req, res) => {
+    const { id } = req.params;
 
-            const format = image.mimetype.split("/")[1];
+    try {
+      const category = await Category.aggregate([
+        {
+          $match: { _id: new mongoose.Types.ObjectId(id) },
+        },
+        {
+          $lookup: {
+            from: "cars",
+            let: { category: "$_id" },
+            pipeline: [
+              { $match: { $expr: { $eq: ["$category", "$$category"] } } },
+            ],
+            as: "cars",
+          },
+        },
+      ]);
 
-            if(format !== 'png' && format !== 'jpeg') {
-                return res.status(403).send({message: 'file format incorrect'})
-            }
-
-            const nameImg = `${v4()}.${format}`
-
-            image.mv(path.join(uploadsDir, nameImg), (error) => {
-                if(error) {
-                    return res.status(503).send({message: err.message})
-                }
-                Products.image = nameImg
-            })
-
-            Products.title = title ? title : Products.title;
-            const updateProducts = await Category.findByIdAndUpdate(id, Products, {new: true})
-
-
-            
-            res.status(200).send({message: "Category update successfully", category: updateProducts})
-
-        } catch (error) {
-            res.status(503).send({message: error.message})
-        }
-    },
-
-    getOne: async (req, res) => {
-        try {
-
-            const {carId} = req.params
-            let category = await Category.findById(carId);
-            if(!category) {
-                return res.status(404).send({message: "Category not found"})
-            }
-            const book = await Car.find({category: carId});
-            category._doc.books = book;
-            res.status(200).send({message: "Categoryies list", category})
-        } catch (error) {
-            res.status(503).send({message: error.message})
-        }
-    },
-
-    
-
-
-}
+      res.status(200).json({ message: "Category", category });
+    } catch (error) {
+      console.log(error);
+      res.status(503).json(error.message);
+    }
+  },
+};
 
 module.exports = categoryCtrl;

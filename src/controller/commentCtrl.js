@@ -44,7 +44,60 @@ const commentCtrl = {
     }
   },
 
-  deleteComment: async (req, res) => {},
+  deleteComment: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { token } = req.headers;
+
+      if (!token) {
+        return res.status(403).send({ message: "Token is required" });
+      }
+
+      const currentUser = await JWT.decode(token);
+
+      const comment = await Comment.findById(id);
+      if (!comment) {
+        return res.status(404).send({ message: "Not found" });
+      }
+      if (comment.authorId == currentUser.id || currentUser.role == "admin") {
+        const deletedComment = await Comment.findByIdAndDelete(id);
+
+        return res
+          .status(200)
+          .send({ message: "Deleted succesfully", deletedComment });
+      }
+
+      res.status(405).send({ message: "Not allowed" });
+    } catch (error) {
+      res.status(503).send(error.message);
+    }
+  },
+
+  updateComment: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { token } = req.headers;
+
+      if (!token) {
+        return res.status(403).send({ message: "Token is required" });
+      }
+
+      const currentUser = await JWT.decode(token);
+      const comment = await Comment.findById(id);
+
+      if (comment.authorId == currentUser.id || currentUser.role == "admin") {
+        const comments = await Comment.findByIdAndUpdate(id, req.body, {
+          new: true,
+        });
+
+        return res
+          .status(200)
+          .send({ message: "Updated succesfully", comments });
+      }
+    } catch (error) {
+      res.status(503).send({ message: error.message });
+    }
+  },
 };
 
 module.exports = commentCtrl;

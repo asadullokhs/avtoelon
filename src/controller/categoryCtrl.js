@@ -64,9 +64,9 @@ const categoryCtrl = {
   },
 
   delete: async (req, res) => {
-    const { token } = req.headers;
-    const { id } = req.params;
     try {
+      const { token } = req.headers;
+      const { id } = req.params;
       if (!token) {
         return res.status(403).json({ message: "Token is required" });
       }

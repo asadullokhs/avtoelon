@@ -10,9 +10,8 @@ const uploadsDir = path.join(__dirname, "../", "files");
 
 const carCtrl = {
   add: async (req, res) => {
+    const { token } = req.headers;
     try {
-      const { token } = req.headers;
-
       if (!token) {
         res.status(403).send({ message: "Token is required" });
       }

@@ -181,19 +181,6 @@ const categoryCtrl = {
             let: { category: "$_id" },
             pipeline: [
               { $match: { $expr: { $eq: ["$category", "$$category"] } } },
-              {
-                $lookup: {
-                  from: "users",
-                  let: { author: "$author" },
-                  pipeline: [
-                    { $match: { $expr: { $eq: ["$_id", "$$author"] } } },
-                  ],
-                  as: "author",
-                },
-              },
-              // {
-              //   $unwind: "$author",
-              // },
             ],
             as: "cars",
           },

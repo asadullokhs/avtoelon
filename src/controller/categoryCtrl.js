@@ -191,6 +191,9 @@ const categoryCtrl = {
                   as: "author",
                 },
               },
+              {
+                $unwind: "$author",
+              },
             ],
             as: "cars",
           },

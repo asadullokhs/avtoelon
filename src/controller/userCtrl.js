@@ -111,6 +111,8 @@ const userCtrl = {
         return res.status(404).json({ message: "User not found" });
       }
 
+      delete user[0].password;
+
       res.status(200).json({ message: "User", user });
     } catch (error) {
       console.log(error);

@@ -152,8 +152,8 @@ const carCtrl = {
     }
   },
   update: async (req, res) => {
+    const { id } = req.params;
     try {
-      const { id } = req.params;
       const { token } = req.headers;
 
       if (!token) {

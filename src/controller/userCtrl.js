@@ -2,13 +2,10 @@ const User = require("../model/userModel");
 const bcrypt = require("bcrypt");
 const JWT = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const { v4 } = require("uuid");
-const path = require("path");
+const cloudinary = require("cloudinary");
 const fs = require("fs");
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
-
-const uploadsDir = path.join(__dirname, "../", "files");
 
 const userCtrl = {
   register: async (req, res) => {
@@ -126,7 +123,7 @@ const userCtrl = {
       const { token } = req.headers;
 
       if (!token) {
-        return res.status(403).json({ message: "token is required" });
+        return res.status(403).json({ message: "Token is required" });
       }
       const user = await User.findById(id);
 
@@ -140,33 +137,34 @@ const userCtrl = {
         }
 
         if (req.files) {
-          if (req.files.avatar) {
-            const { avatar } = req.files;
-
-            const format = avatar.mimetype.split("/")[1];
-
-            if (format !== "png" && format !== "jpg" && format !== "jpeg") {
-              return res.status(403).json({ message: "Format is incorrect" });
-            }
-
-            const nameImg = `${v4()}.${format}`;
-
-            avatar.mv(path.join(uploadsDir, nameImg), (err) => {
+          const { avatar } = req.files;
+          if (user.avatar) {
+            let public_id = user.avatar?.public_id;
+            await cloudinary.v2.uploader.destroy(public_id, async (err) => {
               if (err) {
-                res.status(503).json(err.message);
+                throw err;
               }
             });
-
-            req.body.avatar = nameImg;
-
-            if (user.avatar) {
-              await fs.unlink(path.join(uploadsDir, user.avatar), (err) => {
-                if (err) {
-                  return res.status(503).send({ message: err.message });
-                }
-              });
-            }
           }
+
+          const result = await cloudinary.v2.uploader.upload(
+            avatar.tempFilePath,
+            {
+              folder: "auto-elon",
+            },
+            async (err, result) => {
+              if (err) {
+                throw err;
+              }
+
+              removeTemp(avatar.tempFilePath);
+
+              return result;
+            }
+          );
+          const rasm = { url: result.secure_url, public_id: result.public_id };
+
+          req.body.avatar = rasm;
         }
 
         const updatedUser = await User.findByIdAndUpdate(id, req.body, {
@@ -202,12 +200,15 @@ const userCtrl = {
         if (!deletedUser) {
           return res.status(404).send({ message: "Not found" });
         }
-        if (deletedUser.avatar) {
-          await fs.unlink(path.join(uploadsDir, deletedUser.avatar), (err) => {
-            if (err) {
-              return res.status(503).send({ message: err.message });
+        if (deletedUser.avatar?.public_id) {
+          await cloudinary.v2.uploader.destroy(
+            deletedUser.profilePicture.public_id,
+            async (err) => {
+              if (err) {
+                throw err;
+              }
             }
-          });
+          );
         }
 
         return res

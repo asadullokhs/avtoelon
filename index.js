@@ -2,10 +2,10 @@ const express = require("express");
 const mongoose = require("mongoose");
 const fileupload = require("express-fileupload");
 const dotenv = require("dotenv");
+const cloudinary = require("cloudinary");
 const cors = require("cors");
-dotenv.config();
 
-const path = require("path");
+dotenv.config();
 
 const carRouter = require("./src/router/carRouter");
 const commentRouter = require("./src/router/commentRouter");
@@ -15,11 +15,14 @@ const categoryRouter = require("./src/router/categoryRouter");
 const app = express();
 const PORT = process.env.PORT || 4002;
 
-// Static file
-app.use(express.static(path.join(__dirname, "src", "files")));
+cloudinary.config({
+  cloud_name: process.env.CLOUD_NAME,
+  api_key: process.env.CLOUD_API_KEY,
+  api_secret: process.env.CLOUD_API_SECRET,
+});
 
 //middlewear
-app.use(fileupload());
+app.use(fileupload({ useTempFiles: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());

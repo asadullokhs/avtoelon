@@ -8,7 +8,7 @@ const categorySchema = new mongoose.Schema(
       minlength: 3,
     },
     image: {
-      type: String,
+      type: Object,
       required: true,
     },
     car: {

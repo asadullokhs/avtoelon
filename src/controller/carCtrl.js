@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 const Car = require("../model/carModel");
 const Comment = require("../model/commentsModel");
 const fs = require("fs");
-const path = require("path");
+const cloudinary = require("cloudinary");
 const JWT = require("jsonwebtoken");
 const { v4 } = require("uuid");
 
@@ -24,14 +24,25 @@ const carCtrl = {
           return res.status(403).json({ message: "Format is incorrect" });
         }
 
-        const nameImg = `${v4()}.${format}`;
+        const result = await cloudinary.v2.uploader.upload(
+          image.tempFilePath,
+          {
+            folder: "elon-app",
+          },
+          async (err, result) => {
+            if (err) {
+              throw err;
+            }
 
-        image.mv(path.join(uploadsDir, nameImg), (err) => {
-          if (err) {
-            res.status(503).send(err.message);
+            removeTemp(image.tempFilePath);
+
+            return result;
           }
-        });
-        req.body.image = nameImg;
+        );
+        const rasm = { url: result.secure_url, public_id: result.public_id };
+
+        req.body.image = rasm;
+
         const car = await Car.create(req.body);
         res.status(201).send({
           message: "Car added successfully",
@@ -127,16 +138,20 @@ const carCtrl = {
       const currentCar = await JWT.decode(token);
 
       const car = await Car.findById(id);
+
       if (!car) {
         return res.status(404).send({ message: "Not found" });
       }
       if (car.author == currentCar._id || currentCar.role == "admin") {
         if (car.image) {
-          await fs.unlink(path.join(uploadsDir, car.image), (err) => {
-            if (err) {
-              return res.status(503).send({ message: err.message });
+          await cloudinary.v2.uploader.destroy(
+            car.image.public_id,
+            async (err) => {
+              if (err) {
+                throw err;
+              }
             }
-          });
+          );
         }
         await Comment.deleteMany({ carId: id });
         const deletedCar = await Car.findByIdAndDelete(id);
@@ -166,11 +181,14 @@ const carCtrl = {
       if (car.author == currentCar._id || currentCar.role == "admin") {
         if (car.image !== null || car.image !== "") {
           if (req.files) {
-            await fs.unlink(path.join(uploadsDir, car.image), (err) => {
-              if (err) {
-                return res.status(503).json({ message: err.message });
+            await cloudinary.v2.uploader.destroy(
+              car.image.public_id,
+              async (err) => {
+                if (err) {
+                  throw err;
+                }
               }
-            });
+            );
             const { image } = req.files;
 
             const format = image.mimetype.split("/")[1];
@@ -179,15 +197,27 @@ const carCtrl = {
               return res.status(403).json({ message: "Format is incorrect" });
             }
 
-            const nameImg = `${v4()}.${format}`;
+            const result = await cloudinary.v2.uploader.upload(
+              image.tempFilePath,
+              {
+                folder: "elon-app",
+              },
+              async (err, result) => {
+                if (err) {
+                  throw err;
+                }
 
-            image.mv(path.join(uploadsDir, nameImg), (err) => {
-              if (err) {
-                return res.status(503).json(err.message);
+                removeTemp(image.tempFilePath);
+
+                return result;
               }
-            });
+            );
+            const rasm = {
+              url: result.secure_url,
+              public_id: result.public_id,
+            };
 
-            req.body.image = nameImg;
+            req.body.image = rasm;
           }
         }
 

@@ -1,8 +1,7 @@
 const Category = require("../model/categoryModel");
 const Car = require("../model/carModel");
 const Comment = require("../model/commentsModel");
-const { v4 } = require("uuid");
-const path = require("path");
+const mongoose = require("mongoose");
 const fs = require("fs");
 const cloudinary = require("cloudinary");
 
@@ -26,14 +25,14 @@ const categoryCtrl = {
       }
       const format = image.mimetype.split("/")[1];
 
-      if (!format !== "png" && format !== "jpg") {
+      if (format !== "png" && format !== "jpeg") {
         return res.status(403).send("File format inccorect");
       }
 
       const result = await cloudinary.v2.uploader.upload(
         image.tempFilePath,
         {
-          folder: "elon-app",
+          folder: "Autoelon",
         },
         async (err, result) => {
           if (err) {

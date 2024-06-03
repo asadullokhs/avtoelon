@@ -3,7 +3,15 @@ const Car = require("../model/carModel");
 const Comment = require("../model/commentsModel");
 const cloudinary = require("cloudinary");
 const JWT = require("jsonwebtoken");
-const { v4 } = require("uuid");
+const fs = require("fs");
+
+const removeTemp = (path) => {
+  fs.unlink(path, (err) => {
+    if (err) {
+      throw err;
+    }
+  });
+};
 
 const carCtrl = {
   add: async (req, res) => {
@@ -24,7 +32,7 @@ const carCtrl = {
         const result = await cloudinary.v2.uploader.upload(
           image.tempFilePath,
           {
-            folder: "elon-app",
+            folder: "Autoelon",
           },
           async (err, result) => {
             if (err) {

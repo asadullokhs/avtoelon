@@ -7,6 +7,14 @@ const fs = require("fs");
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY;
 
+const removeTemp = (path) => {
+  fs.unlink(path, (err) => {
+    if (err) {
+      throw err;
+    }
+  });
+};
+
 const userCtrl = {
   register: async (req, res) => {
     const { email } = req.body;
@@ -150,7 +158,7 @@ const userCtrl = {
           const result = await cloudinary.v2.uploader.upload(
             avatar.tempFilePath,
             {
-              folder: "auto-elon",
+              folder: "Autoelon",
             },
             async (err, result) => {
               if (err) {
@@ -202,7 +210,7 @@ const userCtrl = {
         }
         if (deletedUser.avatar?.public_id) {
           await cloudinary.v2.uploader.destroy(
-            deletedUser.profilePicture.public_id,
+            deletedUser.avatar.public_id,
             async (err) => {
               if (err) {
                 throw err;

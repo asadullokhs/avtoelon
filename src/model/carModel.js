@@ -10,8 +10,8 @@ const carsSchema = new mongoose.Schema(
     description: String,
     isActive: Boolean,
     image: {
-      type: String,
-      default: "",
+      type: Object,
+      required: true,
     },
 
     author: {

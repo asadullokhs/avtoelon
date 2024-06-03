@@ -1,12 +1,9 @@
 const mongoose = require("mongoose");
 const Car = require("../model/carModel");
 const Comment = require("../model/commentsModel");
-const fs = require("fs");
 const cloudinary = require("cloudinary");
 const JWT = require("jsonwebtoken");
 const { v4 } = require("uuid");
-
-const uploadsDir = path.join(__dirname, "../", "files");
 
 const carCtrl = {
   add: async (req, res) => {

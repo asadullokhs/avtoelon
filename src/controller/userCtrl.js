@@ -1,4 +1,6 @@
 const User = require("../model/userModel");
+const Car = require("../model/carModel");
+const Comment = require("../model/commentsModel");
 const bcrypt = require("bcrypt");
 const JWT = require("jsonwebtoken");
 const mongoose = require("mongoose");
@@ -204,6 +206,22 @@ const userCtrl = {
 
       if (id == currentUser._id || currentUser.role == "admin") {
         const deletedUser = await User.findByIdAndDelete(id);
+        await Comment.deleteMany({authorId: id});
+        const userCars = await Car.find({author: id})
+
+        userCars.forEach(async car => {
+          if(car?.image?.public_id){
+            await cloudinary.v2.uploader.destroy(
+              car.image.public_id,
+              async (err) => {
+                if (err) {
+                  throw err;
+                }
+              }
+            );
+            await Car.findByIdAndDelete(car._id)
+          }
+        })
 
         if (!deletedUser) {
           return res.status(404).send({ message: "Not found" });
@@ -221,7 +239,7 @@ const userCtrl = {
 
         return res
           .status(200)
-          .send({ message: "Deleted succesfully", deletedUser });
+          .send({ message: "Deleted succesfully", deletedUser, userCars });
       }
 
       res.status(405).send({ message: "Not allowed" });

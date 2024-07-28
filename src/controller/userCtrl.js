@@ -40,7 +40,7 @@ const userCtrl = {
 
       res.status(201).json({
         message: "Created successfully",
-        author: otherDetails,
+        user: otherDetails,
         token,
       });
     } catch (error) {

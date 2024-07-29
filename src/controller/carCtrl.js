@@ -25,7 +25,7 @@ const carCtrl = {
         const { image } = req.files;
         const format = image.mimetype.split("/")[1];
 
-        if (format !== "png" && format !== "jpg" && format !== "jpeg") {
+        if (format !== "png" && format !== "jpg" && format !== "jpeg" && format !== "webp") {
           return res.status(403).json({ message: "Format is incorrect" });
         }
 
